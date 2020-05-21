@@ -1,0 +1,447 @@
+---
+title: "Data Visualization with R Workshop"
+subtitle: "Introduction to ggplot2"
+author: "Rick Scavetta"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This is the practical component of the [Data Visualization with R](https://scavetta.academy/data-visualization-with-r/) Workshop provided by Scavetta Academy. Visit 
+
+```{r}
+# load packages, preinstalled in RStudio Cloud
+library(ggplot2)
+
+# These are not strictly necessary, but we'll use them for looking at some specific examples 
+library(RColorBrewer)
+library(Hmisc)
+
+```
+
+## Using Color
+
+Are many packages that provide colour palettes in R. The most widely used and fundamental is RColorBrewer. 
+
+```{r}
+# Using colour:
+display.brewer.all()
+display.brewer.all(type = "seq")
+display.brewer.pal(9, "Blues")
+myBlues <- brewer.pal(9, "Blues")[c(4,6,8)]
+
+
+```
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## ggplot2: The firset three essential layers
+
+### The data layer
+
+There are many built in datasets in R. A really good starting point for understanding ggplot2 Is the mtcars data set. It describes the properties of 32 engines from cars in 1973. The "mt" in `mtcars` stands for _Motor Trends_, a magazine that apparently was ahead of the game in providing detailed rngine metrics.
+
+The dataset contains the following vatiables:
+
+| Variable | Description                              |
+|----------|------------------------------------------|
+| mpg      | Miles/(US) gallon                        |
+| cyl      | Number of cylinders                      |
+| disp     | Displacement (cu.in.)                    |
+| hp       | Gross horsepower                         |   
+| drat     | Rear axle ratio                          |
+| wt       | Weight (1000 lbs)                        |
+| qsec     | 1/4 mile time                            |
+| vs       | Engine (0 = V-shaped, 1 = straight)      |
+| am       | Transmission (0 = automatic, 1 = manual) |
+| gear     | Number of forward gears                  |
+| carb     | Number of carburetors                    |
+
+You can access the dataset directly from base package.
+
+```{r}
+# The data:
+mtcars
+```
+
+### Layers 2: Aesthetics
+
+```{r}
+# Univariate plot - Histogram
+ggplot(mtcars, aes(mpg))
+```
+
+```{r}
+# Bi-/Multi-variate plot - Scatter plot
+ggplot(mtcars, aes(wt, mpg))
+```
+
+### Layers 3: Geometries
+
+```{r}
+# Univariate plot - Histogram
+ggplot(mtcars, aes(mpg)) +
+  geom_histogram(aes(y = ..density..), 
+                 binwidth = 1, boundary = 1)
+```
+
+```{r}
+# Bi-/Multi-variate plot - Scatter plot
+ggplot(mtcars, aes(wt, mpg, col = factor(cyl))) +
+  geom_point(shape = 16, alpha = 0.6,
+             size = 3)
+```
+
+No the distinction between:
+
+- **Attributes**, which are arguments in the geom later, and are used to _set_ a value, and
+- **Aesthetics**, which are arguments in the aesthetics layer, defined inside `aes()`, and are used to _map_ a variable onto a scale.
+
+The terms _scale_, _aesthetic_, and _axis_ are commonly used interchangeably, but at specific points in making the plot, so don't let this confuse you.
+
+I find that the most common & useful values for the shape argument are:
+
+| Value | Output                                                 | Aesthetic/Attribute argument                |
+|------ |--------------------------------------------------------|---------------------------------------------|
+| `"."` | A single pixel, the smallest possible point.           | `color`                                     |
+| `1`   | Hollow circles                                         | `color`                                     |
+| `16`  | Filled circles, no outline (my favorite)               | `color`                                     |
+| `19`  | Filled circle, with an outline of the _same_ colour    | `color`                                     |
+| `20`  | Filled circle, 2/3 the size of `19`                    | `color`                                     |
+| `21`  | Filled circle, with an outline of a _different_ colour | `color` the outline, `fill` for the inside. |
+
+The `fill` aesthetic and attribute typically refers to the _inside_ of a geometry, as we'll see later. However, An exception to the rule is with points. Here, we typically use the `color` aesthetic, except in the case where a circle has an outline which we see in shape 21. 
+
+For `alpha`, 1 = 100% opaque and 0 = 0% opaque (i.e. 100% transparent). I typically use a value between 0.3 - 0.7.
+
+### Positions
+
+So far our plots have used position "identity", Which means don't do anything, Just put the geometry exactly where the data says to put it. That's the default for `geom_point()`, which kind of makes sense. But that doesn't make sense for things like bar plots.
+
+Let's take a look. Our goal is to make a plot of this contigency table. And tells us the number of accounts for each transmission (`am`) type, 0 & 1, in each cylinder (`cyl`) class, 4, 6, & 8.
+
+```{r}
+table(mtcars$cyl, mtcars$am)
+```
+
+Remember, ggplot2 requires a dataframe as input, so we may be tempted to convert the above table to a dataframe. We have the raw values, but what we want to plot is the absolute count of the number of observations. We could calculate the number of observations in each group ourselves, but we can just let ggplot2 do all of that for us.
+
+We're going to make a couple versions of this plot, so I'm going to assign the data and aesthetics layers to an object, called `g`. You'll see this a lot in did you talk to programming. Sometimes the object names are one leather long, which is typically pretty bad style but somehow people get away with it in this case, mostly for the sake of convenience. Typical letters are `g`, `p`, & `q`. Although I'm introducing this concept here, since it makes this example convenient, I want to emphasize that you **do not** need to do this when just making a single plot. It has lots of very useful applications for when your code gets more complicated. You' wi'll see it in help pages and tutorials, so it's good to be aware of this practice.
+
+```{r}
+# base layers
+g <- ggplot(mtcars, aes(factor(cyl), fill = factor(am)))
+
+g
+```
+
+```{r}
+# Default bar plot
+g +
+  geom_bar()
+```
+
+The default position is stack, which can be specified as:
+
+```{r}
+# Which is...
+g +
+  geom_bar(position = "stack")
+
+```
+
+Position _stack_ is pretty problematic because there is in heaven confusion if the bars are actually stacked or if they are overlapping each other. It sounds strange but actually it's not obvious to the reader which one it is so we want to avoid this ambiguity.
+
+```{r}
+
+# position "dodge"
+g +
+  geom_bar(position = "dodge")
+```
+
+Position fiil is also really nice but this provides the proportional values, noticed that the Y axis name doesn't change, it still says count.
+
+```{r}
+
+# position "fill"
+g +
+  geom_bar(position = "fill")
+
+```
+
+Did you see how it was convenient to use the object `g` Instead of copying and pasting the base layer. We'll see this couple more times in the tutorial.
+
+### Adjusting aesthetics using the Scales functions 
+
+Before we move onto the other layers the last key thing you should know about the first three essential layers is how to adjust the scales. Is done using one of the skills functions.
+
+```{r}
+# Base layers
+p <- ggplot(mtcars, aes(wt, mpg, col = factor(cyl))) +
+  geom_point(shape = 16, alpha = 0.6, size = 3)
+
+p
+```
+
+Update colour scale, manual:
+
+```{r}
+# Scales (i.e. aesthetics)
+p <- p +
+  scale_colour_manual("Cylinders", values = myBlues)
+
+p
+
+```
+
+Update X axis, continuous:
+
+```{r}
+p <- p +
+  scale_x_continuous("Weight (1000 lbs)", limits = c(0,6), breaks = 0:6, expand = c(0,0))
+p
+
+```
+
+
+Update Y axis, continuous:
+
+```{r}
+# Scales (i.e. aesthetics)
+p <- p +
+  scale_y_continuous("mpg", limits = c(10,35), expand = c(0,0))
+p
+```
+
+Of course you can do this all in one step, I broke it apart so you can see each piece.
+
+```{r}
+ggplot(mtcars, aes(wt, mpg, col = factor(cyl))) +
+  geom_point(shape = 16, alpha = 0.6, size = 3) +
+  scale_colour_manual("Cylinders", values = myBlues) +
+  scale_x_continuous("Weight (1000 lbs)", limits = c(0,6), breaks = 0:6, expand = c(0,0)) +
+  scale_y_continuous("mpg", limits = c(10,35), expand = c(0,0))
+```
+
+The way our plotting commands are built, means we can just comment out a specific line if we don't need it.
+
+```{r}
+ggplot(mtcars, aes(wt, mpg, col = factor(cyl))) +
+  geom_point(shape = 16, alpha = 0.6, size = 3) +
+  scale_colour_manual("Cylinders", values = myBlues) +
+  # scale_x_continuous("Weight (1000 lbs)", limits = c(0,6), breaks = 0:6, expand = c(0,0)) +
+  scale_y_continuous("mpg", limits = c(10,35), expand = c(0,0))
+```
+
+But notice that this won't work if it's the last line that we want to comment out. We'd have a hanging `+`, which would indicate to R that our command is not complete. So, if you feel that you want to experiment and comment out certain commands, you can end your ggplot call with `NULL`.
+
+```{r}
+ggplot(mtcars, aes(wt, mpg, col = factor(cyl))) +
+  geom_point(shape = 16, alpha = 0.6, size = 3) +
+  scale_colour_manual("Cylinders", values = myBlues) +
+  scale_x_continuous("Weight (1000 lbs)", limits = c(0,6), breaks = 0:6, expand = c(0,0)) +
+  # scale_y_continuous("mpg", limits = c(10,35), expand = c(0,0)) +
+  NULL
+```
+
+## ggplot2: The optional 4 layers
+
+### The stats layer
+
+#### models
+
+Add a non-parametric model
+
+```{r}
+p + stat_smooth(se = F) # LOESS, default
+```
+
+```{r}
+
+# Add a OLS linear model
+p + stat_smooth(method = "lm", se = F) # Linear Model
+```
+
+```{r}
+# override the col/group aes:
+p + stat_smooth(aes(group = 1), method = "lm", se = F) # one group
+```
+
+#### Summary statistics:
+
+```{r}
+# clean up data:
+str(mtcars)
+mtcars$cyl <- as.factor(mtcars$cyl)
+mtcars$am <- as.factor(mtcars$am)
+```
+
+Define positions:
+
+```{r}
+posn.d <- position_dodge(0.3)
+posn.j <- position_jitter(0.3)
+posn.jd <- position_jitterdodge(0.3, dodge.width = 0.3)
+```
+
+The base layer with 3 variables:
+
+```{r}
+q <- ggplot(mtcars, aes(cyl, wt, col = am))
+q
+```
+
+The individual points:
+
+```{r}
+q +
+  geom_point(position = posn.jd, alpha =  0.6)
+```
+
+Summary stats: mean, sd
+
+Before we plot the mean and standard deviation, let's take a look at how we are going to get them. I'll begin with some random numbers as an example:
+
+```{r}
+set.seed(136)
+xx <- rnorm(100, 10, 6)
+mean(xx)
+sd(xx)
+```
+
+The function were going to use to calculate the mean and standard deviation, `smean.sdl()`, comes from the `Hmisc` package. We loaded this package at the beginning of the script.
+
+```{r}
+smean.sdl(xx, mult = 1)
+```
+
+I loaded the package because I wanted to show you how it works, but if you want to do this in your own functions you don't need to explicitly called `Hmisc`. That's because the `ggplot2` function we're going to use, `mean_sdl()`, will call the Hmisc function for us.
+
+```{r}
+mean_sdl(xx, mult = 1)
+```
+
+Can you spot the difference in the output format? The ggplot2 function returns a dataframe. Each variable is named after an aesthetic. These work just like X, Y, color, etc. that we saw before. To use this function inside our plot, use:
+
+```{r}
+q +
+  stat_summary(fun.data = mean_sdl, 
+               fun.args = list(mult = 1),
+               position = posn.d)
+```
+
+Noticed that mult = 1 is necessary, And in `stat_summary()`, We need to provide this as a list to the `fun.args` argument.
+
+Inferential stats: mean, 95% CI
+
+```{r}
+q +
+  stat_summary(fun.data = mean_cl_normal,
+               position = posn.d)
+```
+
+We can of course combine individual points and a summary:
+
+```{r}
+q +
+  geom_point(position = posn.jd, alpha =  0.6) +
+  stat_summary(fun.data = mean_sdl, 
+               fun.args = list(mult = 1),
+               position = posn.d)
+```
+
+### The Coordinates layer: Aspect Ratios
+
+```{r}
+q +
+  stat_summary(fun.data = mean_sdl, 
+               fun.args = list(mult = 1),
+               position = posn.d) +
+  scale_y_continuous(limits = c(1,5),
+                     expand = c(0,0))
+```
+
+
+```{r}
+q +
+  stat_summary(fun.data = mean_sdl, 
+               fun.args = list(mult = 1),
+               position = posn.d) +
+  scale_y_continuous(expand = c(0,0)) +
+  coord_cartesian(ylim = c(1,5))
+
+```
+
+### The Facets layer: Small Multiples
+
+when you have a small number of groups in a categorial variable, use facet_grid:
+
+```{r}
+m <- ggplot(mtcars, aes(wt, mpg)) +
+  geom_point()
+m
+
+```
+
+Split by rows
+
+```{r}
+m + facet_grid(cyl ~ .)
+```
+
+Split by columns
+
+```{r}
+m + facet_grid(. ~ am)
+```
+
+Split by both 
+
+```{r}
+m + facet_grid(cyl ~ am)
+```
+
+For many groups, use facet_wrap:
+
+```{r}
+m + facet_wrap(~gear, ncol = 2)
+```
+
+### The Themes layer: Non-data Ink
+
+```{r}
+p +
+  theme_classic() +
+  theme(rect = element_blank(),
+        axis.text = element_text(colour = "black"),
+        legend.position = c(0.85, 0.75))
+```
+
+## Saving plots
+
+Raster images - Have pixels & resolution
+- jpg
+- png
+- tif
+- gif
+- bmp
+
+Vector images - Instructions to make images
+- pdf
+- ai
+- svg
+- ps
+- eps
+
+```{r eval = FALSE}
+ggsave("myPlot.png", width = 6, height = 6, units = "in")
+ggsave("myPlot.pdf", width = 6, height = 6, units = "in")
+```
